@@ -1,5 +1,6 @@
 package animals.enums;
 
+//энам степени голода, для механики питания
 public enum HungerState {
 
     FULL("сытый"),

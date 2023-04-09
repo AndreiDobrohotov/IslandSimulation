@@ -2,23 +2,33 @@ package island;
 
 import animals.Animal;
 import animals.enums.AnimalType;
+import controller.Controller;
 import lombok.Getter;
+import lombok.Setter;
+import statictic.EventLog;
+import statictic.StatisticCollector;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
+//класс который отвечает за работу острова
 public class Service {
     @Getter
     private final Field[][] fields;
+    @Getter
+    @Setter
+    private boolean isRunning = false;
     private final int width;
     private final int height;
+    @Getter
+    private final StatisticCollector statisticCollector;
+    @Setter
+    private Controller controller;
+    private ScheduledExecutorService executorService;
 
-    //конструктор принимает размер острова и количество случайных животных сгенерированных для каждой клетки
+    //конструктор принимает размер острова и количество случайных животных
     public Service(int width, int height, int predatorCount, int herbivorousCount) {
         this.width = width;
         this.height = height;
@@ -26,8 +36,36 @@ public class Service {
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 fields[i][j] = new Field(i, j);
-                fields[i][j].fillingTheFieldWithAnimals(predatorCount, herbivorousCount);
+
+                //создаем песочный пляж по краю острова
+                if (i == 0 || i == width - 1 || j == 0 || j == height - 1) {
+                    fields[i][j].setType(FieldType.SAND);
+                }
+                //остальные поля заполняем случайными клетками с разной степенью травянистости
+                else {
+                    fields[i][j].setType(FieldType.values()[ThreadLocalRandom.current().nextInt(FieldType.values().length - 1)]);
+                }
+                fields[i][j].growGrass();
             }
+        }
+        //заполняем поля животными
+        fillingTheIslandWithAnimals(predatorCount, herbivorousCount);
+        //создаем класс статистика и обновляем ее
+        statisticCollector = new StatisticCollector(width, height);
+        statisticCollector.updateTotalInfo(fields);
+    }
+
+    //метод заполнения случайных полей животными. Принимает количество хищников и травоядных
+    public void fillingTheIslandWithAnimals(int predatorCount, int herbivorousCount) {
+        for (int i = 0; i < predatorCount; i++) {
+            int x = ThreadLocalRandom.current().nextInt(width);
+            int y = ThreadLocalRandom.current().nextInt(height);
+            fields[x][y].createAnimalOnField(AnimalType.getRandomPredatorType());
+        }
+        for (int i = 0; i < herbivorousCount; i++) {
+            int x = ThreadLocalRandom.current().nextInt(width);
+            int y = ThreadLocalRandom.current().nextInt(height);
+            fields[x][y].createAnimalOnField(AnimalType.getRandomHerbivorousType());
         }
     }
 
@@ -49,27 +87,52 @@ public class Service {
         return result;
     }
 
-    public void iterate() {
-        System.out.println("test1");
-        ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
-
-        //executorService.scheduleAtFixedRate(test,1,5, TimeUnit.SECONDS);
+    //метод запускает поток, который отвечает за жизненые циклы острова.
+    //переодичность получаем из пользовательского интерфейса.
+    public void start(int frequency) {
+        if (isRunning) {
+            return;
+        }
+        isRunning = true;
+        executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleAtFixedRate(() -> {
-                EventLog.implementNumberOfIteration();
-                feedAnimals();
-                moveAnimals();
-                reproduceAnimals();
-                System.out.println("test2");
-                for (int i = 0; i < width; i++) {
-                    for (int j = 0; j < height; j++) {
-                        fields[i][j].print();
-                    }
-                }
-                System.out.println();
-            },1,5, TimeUnit.SECONDS);
+            EventLog.implementNumberOfIteration();
+            feedAnimals();
+            moveAnimals();
+            reproduceAnimals();
+            growGrassOnFields();
+            if(statisticCollector.updateTotalInfo(fields)){
+                controller.gameOver();
+                stop();
+            }
+            controller.updateAllUI();
 
-        //executorService.shutdown();
-        System.out.println("test3");
+
+        }, 0, frequency, TimeUnit.SECONDS);
+    }
+
+    //даем команду остановится главному потоку и ждем завершения.
+    public void stop() {
+        if (!isRunning) {
+            return;
+        }
+        isRunning = false;
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(Integer.MAX_VALUE, TimeUnit.MICROSECONDS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("Завершено");
+    }
+
+    //метод который проходится по всем полям острова и запускает рост травы
+    private void growGrassOnFields() {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                fields[i][j].growGrass();
+            }
+        }
     }
 
     //метод который проходится по всем полям острова и запускает поток для каждого из них

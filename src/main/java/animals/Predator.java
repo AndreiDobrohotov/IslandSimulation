@@ -1,8 +1,7 @@
 package animals;
 
-import animals.Animal;
 import animals.enums.AnimalType;
-import island.EventLog;
+import statictic.EventLog;
 
 import java.util.ArrayList;
 import java.util.List;

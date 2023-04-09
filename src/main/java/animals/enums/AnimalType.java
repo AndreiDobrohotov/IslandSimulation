@@ -2,24 +2,27 @@ package animals.enums;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+//энам с типом животных
 public enum AnimalType {
 
     BEAR("Медведь"),
-    EAGLE("Орёл"),
-    FOX("Лиса"),
-    SNAKE("Змея"),
     WOLF("Волк"),
+    FOX("Лиса"),
+    EAGLE("Орёл"),
+    SNAKE("Змея"),
 
-    BOAR("Кабан"),
     BUFFALO("Буйвол"),
-    CATERPILLAR("Гусеница"),
-    DEAR("Олень"),
-    DUCK("Утка"),
-    GOAT("Коза"),
     HORSE("Лошадь"),
-    MOUSE("Мышь"),
+    BOAR("Кабан"),
+    DEAR("Олень"),
+    GOAT("Коза"),
+
+    SHEEP("Овца"),
+    DUCK("Утка"),
     RABBIT("Кролик"),
-    SHEEP("Овца");
+    MOUSE("Мышь"),
+    CATERPILLAR("Гусеница");
+
 
     private final String name;
 

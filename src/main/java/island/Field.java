@@ -5,18 +5,26 @@ import animals.enums.AnimalType;
 import animals.herbivorous.*;
 import animals.predators.*;
 import lombok.Getter;
+import lombok.Setter;
+import statictic.EventLog;
 
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+//класс описывающий одно поле на острове
+@Getter
 public class Field {
 
     private final Map<AnimalType, List<Animal>> animalsOnField;
-    @Getter private final int x;
-    @Getter private final int y;
-    @Getter private final EventLog eventLog;
-    private double grass = 0;
+    private final int x;
+    private final int y;
+    @Setter private FieldType type;
+    private final EventLog eventLog;
+    private double grass;
+    @Setter private int animalsEaten;
+    @Setter private int animalsBorn;
+    @Setter private int animalsDiedOfHunger;
 
     public Field(int x, int y) {
         this.x = x;
@@ -25,12 +33,15 @@ public class Field {
         for (AnimalType type : AnimalType.values()) {
             animalsOnField.put(type, new ArrayList<>());
         }
-        growGrass();
         eventLog = new EventLog();
     }
 
+    //методы для подсчета статистики рождения и смерти. возвращают значение в зависимости от типа животного
+    public synchronized void incrementAnimalsBornCount(){animalsBorn++;}
+    public synchronized void incrementAnimalsDiedOfHunger(){animalsDiedOfHunger++;}
+    public synchronized void incrementAnimalsEaten(){animalsEaten++;}
 
-
+    //метод добавления животного на поле. Если лимит превышен то животное не добавляется
     public synchronized boolean addAnimal(Animal animal) {
         if (animalsOnField.get(animal.getType()).size() < animal.getLimit()) {
             animalsOnField.get(animal.getType()).add(animal);
@@ -41,18 +52,27 @@ public class Field {
         }
     }
 
+    //удаляет животное из поля
     public synchronized void removeAnimal(Animal animal) {
         animalsOnField.get(animal.getType()).remove(animal);
     }
 
+    //получает список животных на поле определенного типа
     public synchronized List<Animal> getAnimalsOnField(AnimalType type) {
         return animalsOnField.get(type);
     }
 
-    public synchronized void growGrass() {
-        grass = Math.min(grass + ThreadLocalRandom.current().nextInt(100) + 50, 200);
+    //получает количестве животных на поле определенного типа
+    public int getAnimalsCountOnField(AnimalType type) {
+        return animalsOnField.get(type).size();
     }
 
+    //выращивает случайное количество травы, в зависимости от типа местности
+    public synchronized void growGrass() {
+        grass = Math.min(grass + ThreadLocalRandom.current().nextInt(type.getGrassGrowth()) + type.getGrassGrowth(), type.getGrassLimit());
+    }
+
+    //съесть определенно число травы. Если осталось меньше чем требуется, возвращает остаток.
     public synchronized double eatSomeGrass(double amount) {
         if (grass > amount) {
             grass -= amount;
@@ -64,27 +84,8 @@ public class Field {
         }
     }
 
-    public void fillingTheFieldWithAnimals(int predatorCount, int herbivorousCount) {
-        for (int i = 0; i < predatorCount; i++) {
-            createAnimalOnField(AnimalType.getRandomPredatorType());
-        }
-        for (int i = 0; i < herbivorousCount; i++) {
-            createAnimalOnField(AnimalType.getRandomHerbivorousType());
-        }
-    }
 
-    public void print() {
-        System.out.println(EventLog.getNumberOfIteration() + "-я итерация. Поле: [" + x + "," + y+ "]");
-        //System.out.println(this);
-            if(eventLog.getLogs().get(EventLog.getNumberOfIteration()) != null) {
-                for(String message : eventLog.getLogs().get(EventLog.getNumberOfIteration())) {
-                    System.out.println(message);
-                }
-            }
-
-
-    }
-
+    //создать новое животное по типу и сразу добавить его на поле.
     public synchronized Animal createAnimalOnField(AnimalType type) {
         Animal animal = switch (type) {
             case WOLF -> new Wolf();
@@ -106,20 +107,4 @@ public class Field {
         return addAnimal(animal)?animal:null;
     }
 
-
-
-
-    @Override
-    public String toString() {
-        StringBuilder result = new StringBuilder();
-        result.append("Field: ").append(x).append(" ").append(y).append("\n");
-        for (AnimalType animalType : AnimalType.values()) {
-            for (Animal animal : animalsOnField.get(animalType)) {
-                result.append(animal.toString());
-                result.append(" ");
-            }
-
-        }
-        return result.toString();
-    }
 }

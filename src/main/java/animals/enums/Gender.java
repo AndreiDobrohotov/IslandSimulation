@@ -1,6 +1,8 @@
 package animals.enums;
 
+//энам пола животных, для механики размножения
 public enum Gender {
+
     MALE("Самец"),
     FEMALE("Самка");
 

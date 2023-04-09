@@ -3,9 +3,7 @@ package animals;
 import animals.enums.AnimalType;
 import animals.enums.Gender;
 import animals.enums.HungerState;
-import animals.herbivorous.*;
-import animals.predators.*;
-import island.EventLog;
+import statictic.EventLog;
 import island.Field;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +21,7 @@ public abstract class Animal {
     private final static Properties props = new Properties();
 
     static {
-        try (FileInputStream inputStream = new FileInputStream("src/main/resources/config.properties")) {
+        try (FileInputStream inputStream = new FileInputStream("src/main/resources/Animal.properties")) {
             props.load(inputStream);
         } catch (IOException ignored) {
         }
@@ -74,6 +72,7 @@ public abstract class Animal {
     //метод отвечает за перемещение животного
     //в качестве аргумета приходит перетасованный список полей, куда можно пойти
     public void move(List<Field> canGoTo) {
+        if(speed == 0) return;
         //сразу удаляем животное из текущего поля, чтобы освободить место
         currentField.removeAnimal(this);
         EventLog.animalLeftTheField(this);
@@ -85,7 +84,12 @@ public abstract class Animal {
                 return;
             }
         }
-        //если все доступные поля оказались заняты, считаем что животное умерло по неизвестной причине
+        //если все поля заняты, пытаемся вернутся на первоначальное поле
+        if(currentField.addAnimal(this)){
+            EventLog.animalCameToTheField(this);
+        }
+        //если и оно занято, считаем что животное умерло по неизвестной причине
+
     }
 
 
@@ -93,7 +97,9 @@ public abstract class Animal {
     public abstract void eat();
 
 
+    //метод отвечает за размножение животных
     public void reproduction(List<Animal> animalList) {
+        //если самец - ищем самку и меняем ее состояние на "беременна"
         if (gender == Gender.MALE) {
             for (Animal animal : animalList) {
                 if (type == animal.getType() && animal.gender == Gender.FEMALE && !animal.isPregnant) {
@@ -104,9 +110,10 @@ public abstract class Animal {
             }
             EventLog.animalNoPartner(this);
         } else {
+            //если самка - пытаемся создать случайное число детенышей в текущем поле
             if (isPregnant) {
                 isPregnant = false;
-                int count = ThreadLocalRandom.current().nextInt(2)+1;
+                int count = ThreadLocalRandom.current().nextInt(3);
                 if (count == 0) {
                     EventLog.animalNoChild(this);
                 } else {
@@ -122,10 +129,7 @@ public abstract class Animal {
     }
 
 
-    @Override
-    public String toString() {
-        return name;
-    }
+
 
     //метод получает вес съеденой пиши и насыщает животное (полностью или частично)
     protected void decreaseHunger(double weightOfFood) {
@@ -151,9 +155,12 @@ public abstract class Animal {
 
     }
 
-    protected void die() {
-        currentField.removeAnimal(this);
-    }
+    //если умирает от голода или от хищника, удаляем из текущего поля
+    protected void die() {currentField.removeAnimal(this);}
 
+    @Override
+    public String toString() {
+        return name;
+    }
 
 }

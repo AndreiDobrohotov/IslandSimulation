@@ -1,12 +1,14 @@
-package island;
+package statictic;
 
 import animals.Animal;
 import animals.Herbivorous;
+import island.Field;
 import lombok.Getter;
 
 import java.text.DecimalFormat;
 import java.util.*;
 
+//Класс для логирования жизни животных
 public class EventLog {
     @Getter
     private static int numberOfIteration = 0;
@@ -27,6 +29,7 @@ public class EventLog {
         numberOfIteration++;
     }
 
+    //получает текст сообщения и добавляет его в общий список логов , под номером текущей итерации.
     private static synchronized void addEvent(Field field, String message) {
         EventLog log = field.getEventLog();
         if (!log.getLogs().containsKey(numberOfIteration)) {
@@ -36,10 +39,12 @@ public class EventLog {
     }
 
     public static void animalDiedOfHunger(Animal animal) {
+        animal.getCurrentField().incrementAnimalsDiedOfHunger();
         addEvent(animal.getCurrentField(), String.format(ANIMAL_DIED_OF_HUNGER, animal.getName()));
     }
 
     public static void animalAteAnimal(Animal predator, Animal pray) {
+        predator.getCurrentField().incrementAnimalsEaten();
         addEvent(predator.getCurrentField(), String.format(ANIMAL_ATE_ANIMAL, predator.getName(), pray.getName()));
     }
 
@@ -48,6 +53,7 @@ public class EventLog {
     }
 
     public static void animalGaveABirth(Animal mother, Animal child) {
+        mother.getCurrentField().incrementAnimalsBornCount();
         addEvent(mother.getCurrentField(), String.format(ANIMAL_GAVE_A_BIRTH, mother.getName(), child.getName()));
     }
 

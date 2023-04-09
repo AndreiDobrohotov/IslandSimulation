@@ -2,12 +2,13 @@ package GUI.util;
 
 import javax.swing.*;
 
-public class ConfigInputVerifier extends InputVerifier {
-    private int minValue;
-    private int maxValue;
+//вспомогательный класс для проверки ввода
+public class JTextFieldInputVerifier extends InputVerifier {
+    private final int minValue;
+    private final int maxValue;
     private final String MESSAGE = "Значение должно быть в диапозоне от %d до %d";
 
-    public ConfigInputVerifier(int minValue, int maxValue) {
+    public JTextFieldInputVerifier(int minValue, int maxValue) {
         super();
         this.minValue = minValue;
         this.maxValue = maxValue;
@@ -22,7 +23,7 @@ public class ConfigInputVerifier extends InputVerifier {
             int number = Integer.parseInt(text);
             return (number >= minValue && number <= maxValue);
         } catch (NumberFormatException e) {
-            return false;
+            return text.isEmpty();
         }
     }
 
