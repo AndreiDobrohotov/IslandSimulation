@@ -2,6 +2,7 @@ package island;
 
 import animals.Animal;
 import animals.enums.AnimalType;
+import animals.enums.Gender;
 import controller.Controller;
 import lombok.Getter;
 import lombok.Setter;
@@ -98,6 +99,7 @@ public class Service {
         executorService.scheduleAtFixedRate(() -> {
             EventLog.implementNumberOfIteration();
             feedAnimals();
+            removeAllDead();
             moveAnimals();
             reproduceAnimals();
             growGrassOnFields();
@@ -123,7 +125,6 @@ public class Service {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println("Завершено");
     }
 
     //метод который проходится по всем полям острова и запускает рост травы
@@ -145,7 +146,7 @@ public class Service {
                     Field field = fields[i][j];
                     Runnable runnable = () -> {
                         for (AnimalType type : AnimalType.values()) {
-                            for (Animal animal : new ArrayList<>(field.getAnimalsOnField(type))) {
+                            for (Animal animal : field.getAnimalsOnFieldByType(type)) {
                                 animal.eat();
                             }
                         }
@@ -163,6 +164,15 @@ public class Service {
         }
     }
 
+    //вызывает метод чистки у каждого поля
+    private void removeAllDead() {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                fields[i][j].removeDeadAnimals();
+            }
+        }
+    }
+
     //метод который проходится по всем полям острова и запускает поток для каждого из них
     //вызываем метод "move()" для каждого животного на поле
     private void moveAnimals() {
@@ -172,7 +182,7 @@ public class Service {
                 for (int j = 0; j < height; j++) {
                     Field field = fields[i][j];
                     for (AnimalType type : AnimalType.values()) {
-                        for (Animal animal : field.getAnimalsOnField(type)) {
+                        for (Animal animal : field.getAnimalsOnFieldByType(type)) {
                             Runnable runnable = () -> {
                                 animal.move(whereCanGo(animal.getCurrentField(), animal.getSpeed()));
                             };
@@ -199,16 +209,24 @@ public class Service {
             for (int i = 0; i < width; i++) {
                 for (int j = 0; j < height; j++) {
                     Field field = fields[i][j];
-                    Runnable runnable = () -> {
-                        for (AnimalType type : AnimalType.values()) {
+                    for (AnimalType type : AnimalType.values()) {
+                        Runnable runnable = () -> {
+                            //проходимся по всем самцам и оплодотворяем самок
+                            field.getAnimalsOnFieldByType(type)
+                                    .stream()
+                                    .filter(animal -> animal.getGender() == Gender.MALE)
+                                    .forEach(Animal::reproduction);
+                            //проходимся по всем беременным самкам и осуществляем рождение детенышей
+                            field.getAnimalsOnFieldByType(type)
+                                    .stream()
+                                    .filter(Animal::isPregnant)
+                                    .toList()
+                                    .forEach(Animal::reproduction);
                             //создаем копию листа, чтобы при добавлении детенышей, они не попали в итерацию
-                            List<Animal> copyOfAnimalList = new ArrayList<>(field.getAnimalsOnField(type));
-                            for (Animal animal : copyOfAnimalList) {
-                                animal.reproduction(copyOfAnimalList);
-                            }
-                        }
-                    };
-                    tasks.add(runnable);
+                        };
+                        tasks.add(runnable);
+                    }
+
                 }
             }
             for (Runnable runnable : tasks) {

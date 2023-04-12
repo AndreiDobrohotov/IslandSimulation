@@ -4,9 +4,9 @@ import lombok.Getter;
 
 //энам отвечающий за тип поля. Определяет лимит травы, которая может вырасти.
 public enum FieldType {
-    GRASS(200,100),
-    GROUND(150,75),
-    ROCK(100,50),
+    GRASS(400,200),
+    GROUND(300,150),
+    ROCK(150,75),
     SAND(50,25);
 
     FieldType(int grassLimit, int grassGrowth) {

@@ -52,13 +52,20 @@ public class Field {
         }
     }
 
-    //удаляет животное из поля
+    //удаляет животное с поля
     public synchronized void removeAnimal(Animal animal) {
         animalsOnField.get(animal.getType()).remove(animal);
     }
 
+    //удаляет всех мертвых животных с поля
+    public synchronized void removeDeadAnimals() {
+        for(AnimalType type : AnimalType.values()){
+            animalsOnField.get(type).removeIf(animal -> !animal.isAlive());
+        }
+    }
+
     //получает список животных на поле определенного типа
-    public synchronized List<Animal> getAnimalsOnField(AnimalType type) {
+    public synchronized List<Animal> getAnimalsOnFieldByType(AnimalType type) {
         return animalsOnField.get(type);
     }
 

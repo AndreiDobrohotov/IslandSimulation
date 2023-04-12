@@ -3,6 +3,7 @@ package animals;
 import animals.enums.AnimalType;
 import animals.enums.Gender;
 import animals.enums.HungerState;
+import lombok.EqualsAndHashCode;
 import statictic.EventLog;
 import island.Field;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
-
+@EqualsAndHashCode
 @Getter
 public abstract class Animal {
 
@@ -38,6 +39,7 @@ public abstract class Animal {
     protected double weight;
     protected int speed;
     protected int limit;
+    protected int offspring;
     protected boolean isAlive;
     protected boolean isPregnant;
     protected Map<AnimalType, Integer> food;
@@ -59,6 +61,7 @@ public abstract class Animal {
             weight = Double.parseDouble(props.getProperty(className + ".weight"));
             mustEat = Double.parseDouble(props.getProperty(className + ".mustEat"));
             limit = Integer.parseInt(props.getProperty(className + ".limit"));
+            offspring = Integer.parseInt(props.getProperty(className + ".offspring"));
             food = Arrays.stream(props.getProperty(className + ".food").split(","))
                     .filter(str -> str.contains(":"))
                     .map(str -> str.split(":"))
@@ -72,7 +75,7 @@ public abstract class Animal {
     //метод отвечает за перемещение животного
     //в качестве аргумета приходит перетасованный список полей, куда можно пойти
     public void move(List<Field> canGoTo) {
-        if(speed == 0) return;
+        if (speed == 0) return;
         //сразу удаляем животное из текущего поля, чтобы освободить место
         currentField.removeAnimal(this);
         EventLog.animalLeftTheField(this);
@@ -85,7 +88,7 @@ public abstract class Animal {
             }
         }
         //если все поля заняты, пытаемся вернутся на первоначальное поле
-        if(currentField.addAnimal(this)){
+        if (currentField.addAnimal(this)) {
             EventLog.animalCameToTheField(this);
         }
         //если и оно занято, считаем что животное умерло по неизвестной причине
@@ -98,11 +101,11 @@ public abstract class Animal {
 
 
     //метод отвечает за размножение животных
-    public void reproduction(List<Animal> animalList) {
+    public void reproduction() {
         //если самец - ищем самку и меняем ее состояние на "беременна"
         if (gender == Gender.MALE) {
-            for (Animal animal : animalList) {
-                if (type == animal.getType() && animal.gender == Gender.FEMALE && !animal.isPregnant) {
+            for (Animal animal : currentField.getAnimalsOnFieldByType(type)) {
+                if (animal.gender == Gender.FEMALE && !animal.isPregnant) {
                     animal.isPregnant = true;
                     EventLog.animalMated(this, animal);
                     return;
@@ -113,7 +116,7 @@ public abstract class Animal {
             //если самка - пытаемся создать случайное число детенышей в текущем поле
             if (isPregnant) {
                 isPregnant = false;
-                int count = ThreadLocalRandom.current().nextInt(3);
+                int count = ThreadLocalRandom.current().nextInt(offspring+1);
                 if (count == 0) {
                     EventLog.animalNoChild(this);
                 } else {
@@ -127,8 +130,6 @@ public abstract class Animal {
             }
         }
     }
-
-
 
 
     //метод получает вес съеденой пиши и насыщает животное (полностью или частично)
@@ -146,7 +147,6 @@ public abstract class Animal {
         if (hungerState == HungerState.HUNGRY) {
             if (isAlive) {
                 isAlive = false;
-                die();
                 EventLog.animalDiedOfHunger(this);
             }
         } else {
@@ -156,7 +156,7 @@ public abstract class Animal {
     }
 
     //если умирает от голода или от хищника, удаляем из текущего поля
-    protected void die() {currentField.removeAnimal(this);}
+
 
     @Override
     public String toString() {

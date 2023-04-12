@@ -23,7 +23,7 @@ public abstract class Herbivorous extends Animal {
                 List<Animal> preys = new ArrayList<>();
                 //добавляем всех животных с поля подходящим под рацион в список жертв
                 for (AnimalType type : getFood().keySet()) {
-                    preys.addAll(getCurrentField().getAnimalsOnField(type));
+                    preys.addAll(getCurrentField().getAnimalsOnFieldByType(type).stream().filter(animal -> animal.isAlive).toList());
                 }
                 //если подходящие жертвы нашлись
                 if (preys.size() > 0) {
@@ -36,7 +36,6 @@ public abstract class Herbivorous extends Animal {
                         //если охото прошла удачно, добавляем вес жертвы к съеденному
                         eaten += prey.weight;
                         prey.isAlive = false;
-                        prey.die();
                         EventLog.animalAteAnimal(this, prey);
                     } else {
                         EventLog.animalRanAwayFrom(prey, this);
