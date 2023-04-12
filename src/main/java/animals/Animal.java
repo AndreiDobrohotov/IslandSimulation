@@ -50,7 +50,7 @@ public abstract class Animal {
         type = AnimalType.valueOf(getClass().getSimpleName().toUpperCase());
         //Получаем пол животного исходя из значения счетчина при создании животного
         gender = count % 2 == 0 ? Gender.FEMALE : Gender.MALE;
-        name = type.getName() + "[" + gender + "]" + "-" + count;
+        name = type.getName(gender) + "(" + count+")";
         hungerState = HungerState.FULL;
         isAlive = true;
         isPregnant = false;
